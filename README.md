@@ -7,8 +7,8 @@ my personal Hyprland rice built around Quickshell and pywal.
 ![Desktop](screenshots/2026-05-09-162828_hyprshot.png)
 ![fastfetch + Widgets](screenshots/2026-05-09-162823_hyprshot.png)
 ![Calendar + Weather](screenshots/2026-05-09-162849_hyprshot.png)
-![Code Editor 1](screenshots/2026-05-09-162928_hyprshot.png)
-![Code Editor 2](screenshots/2026-05-09-165141_hyprshot.png)
+![Code Editor 1](screenshots/2026-05-09-165141_hyprshot.png)
+![Code Editor 2](screenshots/2026-05-09-172025_hyprshot.png)
 
 ## Stack
 
