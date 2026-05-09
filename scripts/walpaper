@@ -1,0 +1,79 @@
+#!/bin/bash
+
+WALLPAPER="$(readlink -f "$1")"
+[[ -z "$WALLPAPER" ]] && { echo "Usage: $0 <image>"; exit 1; }
+[[ ! -f "$WALLPAPER" ]] && { echo "Not found: $WALLPAPER"; exit 1; }
+
+# ── Apply wallpaper ─────────────────────────────────────────────
+pkill hyprpaper
+hyprpaper & disown
+sleep 0.3
+hyprctl hyprpaper preload "$WALLPAPER"
+hyprctl hyprpaper wallpaper ",$WALLPAPER"
+
+# ── Generate Pywal colors ──────────────────────────────────────
+wal -i "$WALLPAPER"
+source "$HOME/.cache/wal/colors.sh"
+
+# generate zed
+bash "$(dirname "$0")/zed/generate_theme.sh"
+
+# ── Extract colors directly from the dwm color file ─────────────
+ACTIVE_BORDER=$(grep -oP 'static const char sel_border\[\] = "\K#[0-9A-Fa-f]+"' "$HOME/.cache/wal/colors-wal-dwm.h" | tr -d '"[:space:]')
+INACTIVE_BORDER=$(grep -oP 'static const char norm_border\[\] = "\K#[0-9A-Fa-f]+"' "$HOME/.cache/wal/colors-wal-dwm.h" | tr -d '"[:space:]')
+
+# Debug output to ensure correct color extraction
+echo "Active Border (Hex): $ACTIVE_BORDER"
+echo "Inactive Border (Hex): $INACTIVE_BORDER"
+
+# ── Convert Hex to RGB format ──────────────────────────────────
+hex_to_rgb() {
+    # Extract the RGB components from a hex color like #RRGGBB
+    local hex="$1"
+    local r g b
+    r=$((16#${hex:1:2}))
+    g=$((16#${hex:3:2}))
+    b=$((16#${hex:5:2}))
+    echo "rgb($r,$g,$b)"  # Removed spaces between RGB values
+}
+
+# ── Convert the borders from hex to rgb format ─────────────
+ACTIVE_BORDER_RGB=$(hex_to_rgb "$ACTIVE_BORDER")
+INACTIVE_BORDER_HEX="${INACTIVE_BORDER#\#}"  # Remove '#' from inactive border hex
+
+# ── Convert the inactive border to rgba with alpha (opacity) ─
+# Set opacity for inactive border (0.8 = 80% opacity)
+INACTIVE_BORDER_RGBA="rgba(${INACTIVE_BORDER_HEX}cc)"  # 'cc' is 80% opacity in hex (roughly)
+
+# Debug output to ensure correct RGB conversion and final formats
+echo "Active Border (RGB): $ACTIVE_BORDER_RGB"
+echo "Inactive Border (RGBA): $INACTIVE_BORDER_RGBA"
+
+# ── Apply the colors to Hyprland configuration ─────────────
+sed -i \
+  -e "s|col.active_border = .*|col.active_border = $ACTIVE_BORDER_RGB|" \
+  -e "s|col.inactive_border = .*|col.inactive_border = $INACTIVE_BORDER_RGBA|" \
+  "$HOME/.config/hypr/hyprgeneral.conf"
+
+# ── Reload Hyprland to apply the changes ────────────────────────
+hyprctl reload
+
+# ── Reload pywalfox to apply the changes ────────────────────────
+pywalfox update
+
+# ── Reload waybar to apply the changes ────────────────────────
+pkill waybar && waybar & disown
+
+# ── Reload swaync to apply the changes ────────────────────────
+pkill swaync && swaync & disown
+
+# ── Log the wallpaper path for reference ───────────────────────
+echo "$WALLPAPER" > ~/.cache/wal/wal
+echo "$WALLPAPER" > ~/.wallpaper-current
+
+# Create symlink with correct extension
+WALLPAPER_EXT="${WALLPAPER##*.}"
+ln -sf "$WALLPAPER" ~/rofi-background.$WALLPAPER_EXT
+
+
+
